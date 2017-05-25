@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>RPS Multiplayer Edition</title>
+	<link rel="stylesheet" type="text/css" href="assets/css/reset.css">	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="assets/css/style.css">
+	<script   src="https://code.jquery.com/jquery-3.2.1.js"   integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="   crossorigin="anonymous"></script>
+</head>
+<body>
+	<div class="wrapper">
+		
+
+		<!-- Main Content Section -->
+		<div class="container">
+			
+			<div class="jumbotron container-fluid">
+				<div class="row">
+					<div class="col-xs-12" id="banner">
+						<h1>Rock-Paper-Scissors</h1>
+						<h4>Online Multiplayer Edition</h4>
+					</div>
+				</div>
+				<div class="row" id="playerEntry">
+				</div>
+			</div>
+			
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col-xs-6 col-md-4" id="player1">
+						<div class="panel panel-primary">
+							
+							<div class="panel-heading">
+								<h3 class="panel-title">Player 1:</h3>
+							</div>
+							
+							<div class="panel-body">	
+								<button class="weapons" id="rock">Rock</button>
+								<button class="weapons" id="paper">Paper</button>
+								<button class="weapons" id="scissors">Scissors</button>
+							</div>
+
+							<div class="panel-body">	
+								<table>
+									<tr>
+										<td class="col-xs-4">Wins: </td>
+										<td class="col-xs-4 col-xs-offset-8">Losses: </td>
+									</tr>
+								</table>
+							</div>
+
+						</div>
+					</div>
+					
+					<div class="col-xs-6 col-md-4" id="player2">
+						<div class="panel panel-primary">
+							
+							<div class="panel-heading">
+								<h3 class="panel-title">Player 2:</h3>
+							</div>
+							
+							<div class="panel-body">	
+								<button class="weapons" id="rock">Rock</button>
+								<button class="weapons" id="paper">Paper</button>
+								<button class="weapons" id="scissors">Scissors</button>
+							</div>
+
+							<div class="panel-body">	
+								<table>
+									<tr>
+										<td class="col-xs-4">Wins: </td>
+										<td class="col-xs-4 col-xs-offset-8">Losses: </td>
+									</tr>
+								</table>
+							</div>
+
+						</div>
+					</div>
+
+					<div class="col-xs-12 col-md-4" id="gameDisplay">
+						<div class="panel panel-default">
+							<div class="panel-body" id="gameReadout">	
+								Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test 
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+			
+			<div class="container-fluid">
+				<div class="row">
+					<div class="panel panel-primary" id="chatDiv">
+						
+						<div class="panel-heading">
+							<h3 class="panel-title">Player Chat</h3>
+						</div>
+
+						<div class="panel-body">
+							<form>
+								<div class="panel panel-default" id="chatHistory">
+									<div class="panel-body">
+										Test Test Test Test Test Test Test Test Test Test 
+									</div>
+								</div>
+								<div class="form-group">									
+										<label for="chatSend">Message:</label>
+										<input type="text" class="form-control" id="chatSend" placeholder="Smacktalk Here">
+								</div>
+								<button type="submit" class="btn btn-primary" id="addEmployeeButton">Send</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</div>
+
+	<script src="https://www.gstatic.com/firebasejs/4.0.0/firebase.js"></script>
+	<script type="text/javascript" src="assets/javascript/app.js"></script>
+
+</body>
+</html>
