@@ -38,6 +38,7 @@ td {
 
 #currentPlayers > label {
 	display: block;
+	margin-bottom: 2px;
 }
 
 #gameDisplay {
@@ -49,11 +50,14 @@ td {
 
 #gameReadout {
 	height: 90px;
+	text-align: center;
+	color: #000080;
 }
 
 #playerEntry {
 	margin-top: 20px;
 	margin-bottom: 10px;
+	padding-bottom: 10px;
 }
 
 #player1 {
@@ -88,7 +92,7 @@ td {
 /* Medium devices (desktops, 992px and up) */
 @media (min-width: 992px) {
 
-	.playerEntry {
+	#playerEntry {
 		margin-top: 70px;
 		margin-bottom: 0px;
 	}

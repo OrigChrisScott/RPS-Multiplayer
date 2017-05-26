@@ -15,7 +15,16 @@ var currentMatches = 0;
 var myName = null;
 var myPlayerID = null;
 var myOppID = null;
+var myOppName = null;
+var matchID = null;
+var chatID = null;
 
+// Broken Function!!  Need to write
+var getDBValues = function() {
+	database.ref("players").limitLast(1).orderByChild("key").once("child_added").then(function(snapshot){
+		console.log(snapshot.key);
+	});
+}
 
 var createPlayerEntry = function() {
 	var $div1 = $("<div/>", {"class": "col-xs-4", "id": "addPlayer"});
@@ -45,15 +54,19 @@ var addPlayer = function() {
 			myPlayerID = currentPlayerTotal + 1;
 			database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
 			$("#addPlayerButton").empty();
-			$("#addPlayer").html("<h5>Please Select An Opponent --> </h5>");
+			$("#addPlayer").empty();
+			$("#gameReadout").html("<h4>Please select an opponent to play against!</h4>");
 		} else {
 			alert("Please Enter A Valid Player Name");
 		}
+
+		// Listen for disconnect.  Remove player from DB "players" table upon disconnection.
+		database.ref("players/" + myPlayerID).onDisconnect().remove();
 }
 
 var makePlayerButtons =  function(snapshot) {
-	if (snapshot.val().name !== myName) {
-		var player = $("<button/>", {"class": "playerButtons", "id": snapshot.key, "onClick": "oppSelect(this.id)"});
+	if (snapshot.val().name !== myName && snapshot.val().active === "false") {
+		var player = $("<button/>", {"class": "btn btn-success playerButtons", "id": snapshot.key, "onClick": "oppSelect(this.id)"});
 		$("#currentPlayers").append(player.text(snapshot.val().name));
 		currentPlayerTotal += 1;
 	}
@@ -61,27 +74,53 @@ var makePlayerButtons =  function(snapshot) {
 
 var oppSelect = function(opp) {
 	myOppID = parseInt(opp);
-	var matchID = currentMatches + 1;
-	database.ref("matches/" + matchID).set({"player1": myPlayerID, "player2": myOppID, "turn": 1});
+	myOppName = $("#" + myOppID).text(); 
 	database.ref("players/" + myPlayerID).update({"active": "true"});
 	database.ref("players/" + myOppID).update({"active": "true"});
-
-
-	// Need to write function
-	// setMatch();
-
-	// Need to write function
-	// setChat();
+	
+	setMatch();
 }
 
+var setMatch = function() {
+	matchID = currentMatches + 1;
+	database.ref("matches/" + matchID).set({"player1": myPlayerID, "player2": myOppID, "turn": 1});
+	database.ref("players/" + myPlayerID).once("value").then(function(snapshot){
+		myName = snapshot.val().name;
+		var myWins = snapshot.val().wins;
+		var myLosses = snapshot.val().losses;
+		$("#player1Name").text("Player 1: " + myName);
+		$("#player1Wins").text("Wins: " + myWins);
+		$("#player1Losses").text("Losses: " + myLosses);
+	});
+	database.ref("players/" + myOppID).once("value").then(function(snapshot){
+		myOppName = snapshot.val().name;
+		var myOppWins = snapshot.val().wins;
+		var myOppLosses = snapshot.val().losses;
+		$("#player2Name").text("Player 2: " + myOppName);
+		$("#player2Wins").text("Wins: " + myOppWins);
+		$("#player2Losses").text("Losses: " + myOppLosses);
+	});
+
+	$("#currentPlayers").html("");
+	$("#gameReadout").text("You will playing against " + myOppName);
+
+	setChat();
+}
+
+var updateMatchCount = function(snapshot) {
+	currentMatches += 1;
+}
+
+// Need to write function
+var setChat = function() {
+	console.log("chat function called");
+}
 
 var matchStart = function() {
 
 }
 
-var updateMatchCount = function() {
-	currentMatches += 1;
-}
+
 
 
 
