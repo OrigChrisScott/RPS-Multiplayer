@@ -88,10 +88,10 @@ var addPlayer = function() {
 		
 		// <---- *** Need to add function to escape characters to prevent injection?
 		myName = $("#addPlayerName").val().trim();
+		myPlayerID = currentPlayerIndex + 1;
 
 		// Check for blank name in input box.  If not blank, creat player object with properties.
 		if (myName !== "") {
-			myPlayerID = currentPlayerIndex + 1;
 			database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
 			signedIn = true;
 			$("#addPlayer").empty();
@@ -118,11 +118,27 @@ var addPlayer = function() {
 		});
 }
 
-// Generate player buttons for all players not currently in match.  Do not display current window's player button.
+// Generate player buttons for each players not currently in match (upon DB add).  Do not display current window's player button.
 var makePlayerButtons =  function(snapshot) {
 	if (snapshot.val().name !== myName && snapshot.val().active === "false") {
 		var player = $("<button/>", {"class": "btn btn-success playerButtons", "id": snapshot.key, "onClick": "oppSelect(this.id)"});
 		$("#currentPlayers").append(player.text(snapshot.val().name));
+	}
+}
+
+// Generate all available player buttons for players not currently in match (full DB).  Do not display current window's player button.
+var makeAllPlayerButtons = function(snapshot) {
+	console.log(snapshot.val());
+
+	for (i = 0; i < snapshot.val().length; i++) {
+		console.log("iteration" + i);
+		if (snapshot.child(i).val() !== null) {	
+			if (snapshot.child(i).val().name !== myName && snapshot.child(i).val().active === "false") {
+				var player = $("<button/>", {"class": "btn btn-success playerButtons", "id": snapshot.child(i).key, "onClick": "oppSelect(this.id)"});
+				$("#currentPlayers").append(player.text(snapshot.child(i).val().name));
+				console.log("button created");
+			}
+		}
 	}
 }
 
@@ -134,14 +150,17 @@ var oppSelect = function(opp) {
 
 	// Listen for value change on DB (players child) "oppPlayerID" object to sync wins/losses and write to HTML.
 	database.ref("players/" + oppPlayerID).on("value", function(snapshot){
-		oppName = snapshot.val().name;
-		oppWins = snapshot.val().wins;
-		oppLosses = snapshot.val().losses;
-		updateWinsLosses(oppPlayerID);
+		if (snapshot.val() !== null) {
+			oppName = snapshot.val().name;
+			oppWins = snapshot.val().wins;
+			oppLosses = snapshot.val().losses;
+			updateWinsLosses(oppPlayerID);
+		}	
 	});
 
 	// Set player as active
 	database.ref("players/" + oppPlayerID).update({"active": "true"});
+	database.ref("active/" + oppPlayerID).set({"active": "true"});
 	
 	// Clear lower banner player entry section
 	clearPlayerEntry();
@@ -152,7 +171,7 @@ var clearPlayerEntry = function() {
 	// Clear lower banner
 	$("#addPlayer").empty();
 	$("#addPlayerButton").empty();
-	$("#currentPlayers").empty();
+	$("#currentPlayers").remove();
 }
 
 // Sets up the match
@@ -163,9 +182,14 @@ var setMatch = function() {
 	// Set new match in DB matches table.
 	database.ref("matches/" + matchID).set({"player1": myPlayerID, "player2": oppPlayerID, "turn": "1"});
 	$("#gameReadout").html("You will playing against " + oppName);
+
+	// database.ref("matches/" + matchID).on("value", function(snapshot){
+
+	// });
 	
 	// Set player as active
 	database.ref("players/" + myPlayerID).update({"active": "true"});
+	database.ref("active/" + myPlayerID).set({"active": "true"});
 
 	// Initialize chat
 	setChat();
@@ -183,12 +207,15 @@ var setChat = function() {
 // If active window player was chosen, set opponent values to local variables.  Start the game.
 var startMatch = function() {
 	if (isChosen === true) {
+		
 		// Listen for value change on DB (players child) "oppPlayerID" object to sync wins/losses and write to HTML.
 		database.ref("players/" + oppPlayerID).on("value", function(snapshot){
-			oppName = snapshot.val().name;
-			oppWins = snapshot.val().wins;
-			oppLosses = snapshot.val().losses;
-			updateWinsLosses(oppPlayerID);
+			if (snapshot.val() !== null) {
+				oppName = snapshot.val().name;
+				oppWins = snapshot.val().wins;
+				oppLosses = snapshot.val().losses;
+				updateWinsLosses(oppPlayerID);
+			}
 		});
 
 		// Set display readout
@@ -265,35 +292,46 @@ $(document).ready(function(){
 		updatePlayerIndex();
 	});
 
-	// <--- NEED TO WRITE
 	// Listen to DB "players" table for player being removed. Run function to clear match, chat, and reset opponent's status.
 	database.ref("players").on("child_removed", function(oldChildSnapshot){
 
-		console.log(oldChildSnapshot);
-		// if (oppPlayerID == oldChildSnapshot.key) {
-			
-		// 	// <--- Not Working!
-		// 	// database.ref("matches/1").once("value").then(function(snapshot){
-		// 	// 	console.log(snapshot.player1);
-		// 	// });
+		var removedChild = oldChildSnapshot.val();
+		var removedID = parseInt(oldChildSnapshot.key);
+		database.ref("active/" + removedID).remove();
+		$("#" + removedID).remove();
 
-			
-		// 	database.ref("players/" + myPlayerID).remove();
+		if (removedID === oppPlayerID) {
+			$("#gameReadout").empty();
+			$("#gameReadout").html("<h5>" + oppName + " has left the match!</h5>");
+			database.ref("matches/" + matchID).remove();
+			database.ref("chats/" + matchID).remove();
+			oppName = null;
+			oppPlayerID = null;
+			oppWins = null;
+			oppLosses = null;
+			matchID = null;
+			chatID = null;
+			turn = 1;
+			$("#gameReadout").append("<h4>Please select an opponent to play against!</h4>");
+			createPlayerEntry.currentPlayersDiv();
+			database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
+			database.ref("active/" + myPlayerID).remove();
+		}
 
-		// 	oppPlayerID = null;
-		// 	oppName = null;
-
-		// 	// <--- Not Working!
-		// 	// database.ref("players").once("value").then(function(snapshot){
-		// 	// 	// console.log(snapshot.child(myPlayerID));
-		// 	// });
-
-		// 	createPlayerEntry.currentPlayersDiv();
-		// 	$("#gameReadout").html("<h4>Please select an opponent to play against!</h4>");
-		// 	database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
-		// }
+		database.ref("players").once("value", function(snapshot){
+			$("#currentPlayers").remove();
+			createPlayerEntry.currentPlayersDiv();
+			makeAllPlayerButtons(snapshot);
+		});
 	});
 
+	// Listens to DB "active" table new players added.  When a player becomes active, their button is removed from available players.
+	database.ref("active").on("child_added", function(snapshot){
+		console.log(snapshot.key);
+		console.log(typeof snapshot.key);
+		var divID = snapshot.key;
+		$("#" + divID).remove();
+	});
 	
 
 	// Listen to DB "matches" table for added match.  Run functions.
@@ -301,7 +339,6 @@ $(document).ready(function(){
 		
 		// Increment the currentMatchIndex to keep sync
 		updateMatchIndex();
-		console.log("updateMatchIndex called");
 
 		// Check to see if the match involves subject player.  If so, set applicable opponent ID.
 		if (snapshot.val().player2 === myPlayerID) {
