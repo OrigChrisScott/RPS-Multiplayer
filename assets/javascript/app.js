@@ -194,16 +194,6 @@ var setMatch = function() {
 	setChat();
 }
 
-
-
-
-
-// <--- Need to write function
-var setChat = function() {
-	// <---- TESTING
-	console.log("chat function called");
-}
-
 // If active window player was chosen, set opponent values to local variables.  Start the game.
 var startMatch = function() {
 	if (isChosen === true) {
@@ -227,6 +217,41 @@ var startMatch = function() {
 
 
 
+// <--- Need to write function
+var setChat = function() {
+	// chatID = matchID;
+	// $("#sendChatButton").on("click", sendChat);
+	// $("#sendChatButton").on("keypress", function(event){
+	// 	if (event.which == 13) {
+	// 		sendChat();
+	// 	}
+	// });
+
+	// <--- Testing
+	console.log("chat set");
+}
+
+// <--- Need to write function
+var sendChat = function() {
+	
+	// Bug in event.preventDefault()??
+	console.log("works");
+	event.preventDefault();
+
+	// var messageIndex = currentMessageIndex + 1;
+	// var p = myName;
+	// var m = $("#sendChatMessage").text();
+	// var t = "test time";
+	// database.ref("chats/" + chatID + "/" + messageIndex).set({"name": p, "message": m, "time": t});
+
+	// <--- Testing
+	console.log("chat message set");
+}
+
+
+
+
+
 
 var updatePlayerIndex = function() {
 	currentPlayerIndex += 1;
@@ -236,7 +261,7 @@ var updateMatchIndex = function() {
 	currentMatchIndex += 1;
 }
 
-var updateChatIndex = function(snapshot) {
+var updateChatIndex = function() {
 	currentChatIndex += 1;
 }
 
@@ -276,7 +301,7 @@ $(document).ready(function(){
 	// Listen for "Join" button click or Enter key presses. Add player to DB "players" table.
 	$("#addPlayerButton").on("click", addPlayer);
 	$("#addPlayerName").on("keypress", function(event){
-		if (event.which == 13) {
+		if (event.which == 13 && signedIn === false) {
 			addPlayer();
 		}
 	});
@@ -358,7 +383,9 @@ $(document).ready(function(){
 	
 
 	// Listen to DB "chats" table for added chat.  Increment currentChatIndex counter for accurate chatIDs added later.
-	database.ref("chats").on("child_added", updateChatIndex);
+	database.ref("chats").on("child_added", function(snapshot){
+		updateChatIndex();
+	});
 	
 	// Listen to DB (chats child) "messages" table for added message.  Increment currentMessageIndex counter for accurate messageIDs added later.
 	database.ref("chats/messages").on("child_added", updateMessageIndex);
