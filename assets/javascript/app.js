@@ -194,16 +194,6 @@ var setMatch = function() {
 	setChat();
 }
 
-
-
-
-
-// <--- Need to write function
-var setChat = function() {
-	// <---- TESTING
-	console.log("chat function called");
-}
-
 // If active window player was chosen, set opponent values to local variables.  Start the game.
 var startMatch = function() {
 	if (isChosen === true) {
@@ -224,39 +214,73 @@ var startMatch = function() {
 	}
 }
 
-
-
-
-
-var updatePlayerIndex = function() {
-	currentPlayerIndex += 1;
+// Sets up chat.
+var setChat = function() {
+	chatID = matchID;
 }
 
-var updateMatchIndex = function() {
-	currentMatchIndex += 1;
+// Pushes chat messages to "chats" DB table.
+var sendChat = function() {
+	event.preventDefault();
+
+	var messageIndex = currentMessageIndex + 1;
+	var p = myName;
+	// Take value from chat text entry box.
+	var m = $("#sendChatMessage").val();
+	$("#sendChatMessage").val("");
+	
+
+	// <--- Need to set time stamp with moment.js.
+	var t = "test time";
+
+
+	database.ref("chats/" + chatID + "/" + messageIndex).update({"name": p, "message": m, "time": t});
 }
 
-var updateChatIndex = function(snapshot) {
-	currentChatIndex += 1;
-}
 
-var updateMessageIndex = function(snapshot) {
-	currentMessageIndex += 1;
-}
 
-// Updates wins and losses for playerID passed as argument.
-var updateWinsLosses = function(playerID) {
 
-	if (playerID === myPlayerID) {
-		$("#player1Name").text("You:   " + myName);
-		$("#player1Wins").text("Wins:  " + myWins);
-		$("#player1Losses").text("Losses:  " + myLosses); 
-	} else if (playerID === oppPlayerID) {
-		$("#player2Name").text("Opponent:   " + oppName);
-		$("#player2Wins").text("Wins:  " + oppWins);
-		$("#player2Losses").text("Losses:  " + oppLosses);
+
+// Updates game indexes based on event listeners
+	var updatePlayerIndex = function() {
+		currentPlayerIndex += 1;
 	}
-}
+
+	var updateMatchIndex = function() {
+		currentMatchIndex += 1;
+	}
+
+	var updateChatIndex = function() {
+		currentChatIndex += 1;
+	}
+
+	var updateMessageIndex = function() {
+		currentMessageIndex += 1;
+	}
+
+
+// Updates game play elements.
+	// Make sure chat section is scrolled to the bottom position to view newest message when it enters the DB.
+	var updateChatScroll = function() {
+		$("#chatHistory").each(function() {
+		   var scrollHeight = Math.max(this.scrollHeight, this.clientHeight);
+		   this.scrollTop = scrollHeight - this.clientHeight;
+		});
+	}
+
+	// Updates wins and losses for playerID passed as argument.
+	var updateWinsLosses = function(playerID) {
+
+		if (playerID === myPlayerID) {
+			$("#player1Name").text("You:   " + myName);
+			$("#player1Wins").text("Wins:  " + myWins);
+			$("#player1Losses").text("Losses:  " + myLosses); 
+		} else if (playerID === oppPlayerID) {
+			$("#player2Name").text("Opponent:   " + oppName);
+			$("#player2Wins").text("Wins:  " + oppWins);
+			$("#player2Losses").text("Losses:  " + oppLosses);
+		}
+	}
 
 
 
@@ -276,7 +300,7 @@ $(document).ready(function(){
 	// Listen for "Join" button click or Enter key presses. Add player to DB "players" table.
 	$("#addPlayerButton").on("click", addPlayer);
 	$("#addPlayerName").on("keypress", function(event){
-		if (event.which == 13) {
+		if (event.which == 13 && signedIn === false) {
 			addPlayer();
 		}
 	});
@@ -288,6 +312,7 @@ $(document).ready(function(){
 		makePlayerButtons(snapshot);
 		// Increment currentPlayerIndex counter for accurate playersIDs added later.
 		updatePlayerIndex();
+
 	});
 
 	// Listen to DB "players" table for player being removed. Run function to clear match, chat, and reset opponent's status.
@@ -296,9 +321,14 @@ $(document).ready(function(){
 		var removedChild = oldChildSnapshot.val();
 		var removedID = parseInt(oldChildSnapshot.key);
 		database.ref("active/" + removedID).remove();
+		
+		// Removes player button
 		$("#" + removedID).remove();
 
+		// Checks if the player that disconnected was the opponent.
 		if (removedID === oppPlayerID) {
+			
+			// Reset displays and opponent variables.
 			$("#gameReadout").empty();
 			$("#gameReadout").html("<h5>" + oppName + " has left the match!</h5>");
 			$("#player2Name").text("Opponent:   ");
@@ -314,14 +344,16 @@ $(document).ready(function(){
 			chatID = null;
 			turn = 1;
 			$("#gameReadout").append("<h4>Please select an opponent to play against!</h4>");
+			
 			// Restore available players section.
 			createPlayerEntry.currentPlayersDiv();
+			
 			// Change current window player's status back to inactive.
 			database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
-			database.ref("active/" + myPlayerID).remove();			
+			database.ref("active/" + myPlayerID).remove();	
+
 		}
 	});
-
 
 	// Listens to DB "active" table new players added.  When a player becomes active, their button is removed from available players.
 	database.ref("active").on("child_added", function(snapshot){
@@ -331,16 +363,17 @@ $(document).ready(function(){
 
 	// Listen for players going from active to inactive to generate a button in the available player section.
 	database.ref("active").on("child_removed", function(snapshot){
+		
 		// Grab snapshot of "players" table.
 		database.ref("players").once("value", function(snapshot){
+			
 			// Regenerate all available player buttons.
 			$("#currentPlayers").empty();
 			makeAllPlayerButtons(snapshot);
+		
 		});
 	});
 
-
-	
 	// Listen to DB "matches" table for added match.  Run functions.
 	database.ref("matches").on("child_added", function(snapshot){
 		
@@ -355,13 +388,41 @@ $(document).ready(function(){
 		}
 	});
 	
-	
+	// Listen to DB "chats" table for added chat.  Run functions.
+	database.ref("chats").on("child_added", function(snapshot){
+		
+		// Increment currentChatIndex counter for accurate chatIDs added later.
+		updateChatIndex();
+		
+		// Check if new child in chat DB table is from current match.  If so, set chatID.
+		var childKey = parseInt(snapshot.key);
+		if (childKey === matchID) {
+			chatID = matchID;
+		}
 
-	// Listen to DB "chats" table for added chat.  Increment currentChatIndex counter for accurate chatIDs added later.
-	database.ref("chats").on("child_added", updateChatIndex);
-	
-	// Listen to DB (chats child) "messages" table for added message.  Increment currentMessageIndex counter for accurate messageIDs added later.
-	database.ref("chats/messages").on("child_added", updateMessageIndex);
+		// Listen to DB (chats child) "messages" table for added message.  Run functions.
+		database.ref("chats/" + chatID).on("child_added", function(snapshot){
+			
+			// Increment currentMessageIndex counter for accurate messageIDs added later.
+			updateMessageIndex();
+			
+			var p = snapshot.val().name;
+			var m = snapshot.val().message;
+			var t = snapshot.val().time;
+			var chatClass = "";
+			
+			// Check if message was generated by you or your opponent, assign appropriate class.
+			if (p == myName) {
+				chatClass = "chatMy";
+			} else {
+				chatClass = "chatOpp";
+			}
 
+			// Add chat message to chat display section
+			$("#chatHistory").append("<span class=\"chatSpan\"><p class=\"timeStamp\">" + t + "</p><p class=\"" + chatClass + "\">" + p + ":&nbsp;&nbsp;&nbsp;" + m + "</p></span>");
+			updateChatScroll();
+
+		});
+	});
+	
 });
-
