@@ -35,9 +35,20 @@ var turn = 1;
 // Grabs current array indexes for players table and matches table to set current index variables locally
 var getInitialDBValues = function() {
 	database.ref("players").once("value", function(snapshot){
-		var playerArray = snapshot.val().length;
-		currentPlayerIndex = playerArray - 1;
+		var playerObject = snapshot.val();
+		
+		if (playerObject != null) {
+			var playerIDArray = Object.keys(playerObject);
+			var ind = playerIDArray.length - 1;
+			currentPlayerIndex = parseInt(playerIDArray[ind]);
+		} else {
+			currentPlayerIndex = 0;
+		}
+
+		// TESTING
+		console.log(snapshot.val(), currentPlayerIndex);
 	});
+
 	database.ref("matches").once("value", function(snapshot){
 		var matchArray = snapshot.val();
 		
@@ -46,6 +57,9 @@ var getInitialDBValues = function() {
 		} else {
 			currentMatchIndex = 0;
 		}
+
+		// TESTING
+		console.log(snapshot.val(), currentMatchIndex);
 		
 		currentChatIndex = currentMatchIndex;
 		currentMessageIndex = 0;
@@ -129,12 +143,14 @@ var makePlayerButtons =  function(snapshot) {
 // Generate all available player buttons for players not currently in match (full DB).  Do not display current window's player button.
 var makeAllPlayerButtons = function(snapshot) {
 
-	// Iterate through available players and create buttons.
-	for (i = 0; i < snapshot.val().length; i++) {
-		if (snapshot.child(i).val() !== null) {	
-			if (snapshot.child(i).val().name !== myName && snapshot.child(i).val().active === "false") {
-				var player = $("<button/>", {"class": "btn btn-success playerButtons", "id": snapshot.child(i).key, "onClick": "oppSelect(this.id)"});
-				$("#currentPlayers").append(player.text(snapshot.child(i).val().name));
+	if (snapshot.val() != null) {
+		// Iterate through available players and create buttons.
+		for (i = 0; i < snapshot.val().length; i++) {
+			if (snapshot.child(i).val() !== null) {	
+				if (snapshot.child(i).val().name !== myName && snapshot.child(i).val().active === "false") {
+					var player = $("<button/>", {"class": "btn btn-success playerButtons", "id": snapshot.child(i).key, "onClick": "oppSelect(this.id)"});
+					$("#currentPlayers").append(player.text(snapshot.child(i).val().name));
+				}
 			}
 		}
 	}
