@@ -6,6 +6,29 @@ td {
 	font-weight: 600;
 }
 
+.chatMy {
+	color: blue;
+	float: left;
+	font-size: 14px;
+	margin-bottom: 1px;
+	margin-top: 1px;
+	padding: 1px;
+}
+
+.chatOpp {
+	color: red;
+	float: left;
+	font-size: 14px;
+	margin-bottom: 1px;
+	margin-top: 1px;
+	padding: 1px;
+}
+
+.chatSpan {
+	clear: both;
+	display: block;
+}
+
 .jumbotron {
 	display: block;
 	min-height: 200px;
@@ -16,6 +39,14 @@ td {
 
 .playerButtons {
 	margin: 2px;
+}
+
+.timeStamp {
+	float: right;
+	font-size: 14px;
+	margin-bottom: 1px;
+	margin-top: 1px;
+	padding: 1px;
 }
 
 .weapons {
@@ -34,6 +65,7 @@ td {
 
 #chatHistory {
 	height: 150px;
+	overflow-y: scroll;
 }
 
 #currentPlayers > label {
