@@ -29,6 +29,10 @@ td {
 	display: block;
 }
 
+.chatSpan > h6 {
+	font-style: italic;
+}
+
 .jumbotron {
 	display: block;
 	min-height: 200px;
@@ -60,6 +64,8 @@ td {
 }
 
 #banner {
+	display: block;
+	height: 170px;
 	text-align: center;
 }
 
@@ -101,6 +107,7 @@ td {
 	display: inline-block;
 	float: left;
 }
+
 
 
 /* Small devices (desktops, 768px and up) */
