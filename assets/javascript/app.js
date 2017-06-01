@@ -29,6 +29,7 @@ var oppLosses = null;
 
 var matchID = null;
 var chatID = null;
+var chatListener = false;
 var turn = 1;
 
 // Grabs current array indexes for players table and matches table to set current index variables locally
@@ -47,6 +48,7 @@ var getInitialDBValues = function() {
 		}
 		
 		currentChatIndex = currentMatchIndex;
+		currentMessageIndex = 0;
 	});
 }
 
@@ -92,9 +94,9 @@ var addPlayer = function() {
 		if (myName !== "") {
 			database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
 			signedIn = true;
-			$("#addPlayer").empty();
+			$("#addPlayer").html("<h4>Welcome, " + myName + "!</h4>");
 			$("#addPlayerButton").empty();
-			$("#gameReadout").html("<h4>Please select an opponent to play against!</h4>");
+			$("#gameReadout").html("<h5>Please select an opponent to play against!</h5>");
 		} else {
 			alert("Please Enter A Valid Player Name");
 		}
@@ -184,7 +186,7 @@ var setMatch = function() {
 	
 	// Set new match in DB matches table.
 	database.ref("matches/" + matchID).set({"player1": myPlayerID, "player2": oppPlayerID, "turn": "1"});
-	$("#gameReadout").html("You will be playing against " + oppName);
+	$("#gameReadout").html("<h4>You will be playing against " + oppName + ".</h4>");
 
 	// Set player as active
 	database.ref("players/" + myPlayerID).update({"active": "true"});
@@ -209,8 +211,10 @@ var startMatch = function() {
 		});
 
 		// Set display readout
-		$("#gameReadout").html(oppName + " has chosen to play against you!");
-	
+		$("#gameReadout").html("<h4>" + oppName + " has chosen to play against you!</h4>");
+		
+		// Initialize chat
+		setChat();
 	}
 }
 
@@ -223,18 +227,22 @@ var setChat = function() {
 var sendChat = function() {
 	event.preventDefault();
 
-	var messageIndex = currentMessageIndex + 1;
-	var p = myName;
-	// Take value from chat text entry box.
-	var m = $("#sendChatMessage").val();
-	$("#sendChatMessage").val("");
-	
+	if (signedIn == true && chatID != null) {
+		var messageIndex = currentMessageIndex + 1;
+		var p = myName;
+		// Take value from chat text entry box.
+		var m = $("#sendChatMessage").val();
+		$("#sendChatMessage").val("");
+		
 
-	// <--- Need to set time stamp with moment.js.
-	var t = "test time";
+		// <--- Need to set time stamp with moment.js.
+		var t = "test time";
 
 
-	database.ref("chats/" + chatID + "/" + messageIndex).update({"name": p, "message": m, "time": t});
+		database.ref("chats/" + chatID + "/" + messageIndex).update({"name": p, "message": m, "time": t});
+	} else {
+		alert("You cannot chat until you join the game and begin a match.");
+	}
 }
 
 
@@ -272,11 +280,11 @@ var sendChat = function() {
 	var updateWinsLosses = function(playerID) {
 
 		if (playerID === myPlayerID) {
-			$("#player1Name").text("You:   " + myName);
+			$("#player1Name").html("You:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + myName);
 			$("#player1Wins").text("Wins:  " + myWins);
 			$("#player1Losses").text("Losses:  " + myLosses); 
 		} else if (playerID === oppPlayerID) {
-			$("#player2Name").text("Opponent:   " + oppName);
+			$("#player2Name").html("Opponent:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + oppName);
 			$("#player2Wins").text("Wins:  " + oppWins);
 			$("#player2Losses").text("Losses:  " + oppLosses);
 		}
@@ -330,7 +338,8 @@ $(document).ready(function(){
 			
 			// Reset displays and opponent variables.
 			$("#gameReadout").empty();
-			$("#gameReadout").html("<h5>" + oppName + " has left the match!</h5>");
+			$("#gameReadout").html("<h4>" + oppName + " has left the match!</h4>");
+			$("#chatHistory").append("<span class=\"chatSpan\"><h6>" + oppName + " has disconnected.</h6></span>");
 			$("#player2Name").text("Opponent:   ");
 			$("#player2Wins").text("Wins:  ");
 			$("#player2Losses").text("Losses:  ");
@@ -343,14 +352,17 @@ $(document).ready(function(){
 			matchID = null;
 			chatID = null;
 			turn = 1;
-			$("#gameReadout").append("<h4>Please select an opponent to play against!</h4>");
+			$("#gameReadout").append("<h5>Please select an opponent to play against!</h5>");
 			
 			// Restore available players section.
 			createPlayerEntry.currentPlayersDiv();
 			
 			// Change current window player's status back to inactive.
 			database.ref("players/" + myPlayerID).set({"active": "false", "losses": 0, "name": myName, "wins": 0});
-			database.ref("active/" + myPlayerID).remove();	
+			database.ref("active/" + myPlayerID).remove();
+
+			// Resync DB index values
+			getInitialDBValues();	
 
 		}
 	});
@@ -368,7 +380,7 @@ $(document).ready(function(){
 		database.ref("players").once("value", function(snapshot){
 			
 			// Regenerate all available player buttons.
-			$("#currentPlayers").empty();
+			$(".playerButtons").remove();
 			makeAllPlayerButtons(snapshot);
 		
 		});
@@ -400,29 +412,36 @@ $(document).ready(function(){
 			chatID = matchID;
 		}
 
-		// Listen to DB (chats child) "messages" table for added message.  Run functions.
-		database.ref("chats/" + chatID).on("child_added", function(snapshot){
-			
-			// Increment currentMessageIndex counter for accurate messageIDs added later.
-			updateMessageIndex();
-			
-			var p = snapshot.val().name;
-			var m = snapshot.val().message;
-			var t = snapshot.val().time;
-			var chatClass = "";
-			
-			// Check if message was generated by you or your opponent, assign appropriate class.
-			if (p == myName) {
-				chatClass = "chatMy";
-			} else {
-				chatClass = "chatOpp";
-			}
+		// Check if chatListener already exists.
+		if (chatListener == false) {	
+			// Listen to DB (chats child) "messages" table for added message.  Run functions.
+			database.ref("chats/" + chatID).on("child_added", function(snapshot){
+				
+				// Increment currentMessageIndex counter for accurate messageIDs added later.
+				updateMessageIndex();
+				
+				var p = snapshot.val().name;
+				var m = snapshot.val().message;
+				var t = snapshot.val().time;
+				var chatClass = "";
+				
+				// Check if message was generated by you or your opponent, assign appropriate class.
+				if (p == myName) {
+					chatClass = "chatMy";
+				} else {
+					chatClass = "chatOpp";
+				}
 
-			// Add chat message to chat display section
-			$("#chatHistory").append("<span class=\"chatSpan\"><p class=\"timeStamp\">" + t + "</p><p class=\"" + chatClass + "\">" + p + ":&nbsp;&nbsp;&nbsp;" + m + "</p></span>");
-			updateChatScroll();
+				// Add chat message to chat display section
+				$("#chatHistory").append("<span class=\"chatSpan\"><p class=\"timeStamp\">" + t + "</p><p class=\"" + chatClass + "\">" + p + ":&nbsp;&nbsp;&nbsp;" + m + "</p></span>");
+				updateChatScroll();
 
-		});
+			});
+
+			// Set chatListener to exist.
+			chatListener = true;
+
+		}
 	});
 	
 });
